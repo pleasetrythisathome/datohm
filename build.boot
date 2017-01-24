@@ -2,7 +2,7 @@
 (require '[clojure.edn :as edn])
 (def deps (edn/read-string (slurp "build/deps.edn")))
 
-(def project "dohm")
+(def project "datohm")
 (def version (deduce-version-from-git))
 
 (set-env!
