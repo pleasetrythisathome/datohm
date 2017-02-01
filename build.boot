@@ -22,7 +22,8 @@
                         :transit
                         :time]
                        (pull-deps deps))
-                  (->> [{:boot [:laces
+                  (->> [{:boot [:component
+                                :laces
                                 :test]
                          :test [:check]}]
                        (pull-deps deps "test")))))
@@ -30,6 +31,7 @@
 (require
  '[adzerk.bootlaces :refer :all]
  '[adzerk.boot-test :refer [test]]
+ '[boot-component.reloaded :refer :all]
  '[clojure.tools.namespace.repl :as repl])
 
 (bootlaces! version)

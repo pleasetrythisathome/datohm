@@ -1,5 +1,6 @@
 (ns user
-  (:require [#?(:clj clojure.pprint
+  (:require [datohm.conn :as conn]
+            [#?(:clj clojure.pprint
                 :cljs cljs.pprint)
              :refer [pprint]]
             [taoensso.timbre :as log]))
@@ -13,7 +14,11 @@
        []
        (eval
         '(do (in-ns 'boot.user)
-             (start-repl))))))
+             (start-repl))))
+
+     (def conn (conn/connect "datohm"))
+     (def env {:conn conn})
+     ))
 
 (comment
 
