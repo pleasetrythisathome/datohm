@@ -8,8 +8,9 @@ machine:
 
 dependencies:
   pre:
-    - sudo apt-get update;
-    - sudo apt-get install unzip;
+    - sudo apt-get update
+    - sudo apt-get install unzip
+    - git submodule update --init --recursive
     - bash ./build/datomic/install-datomic.sh -v ${DATOMIC_VERSION} -u ${DATOMIC_USER} -p ${DATOMIC_PASS}
     - sudo bash ./build/install-boot.sh
     - boot show -d:
