@@ -6,6 +6,9 @@
 (def version (deduce-version-from-git))
 
 (set-env!
+ :repositories #(conj % ["my.datomic.com" {:url "https://my.datomic.com/repo"
+                                           :username (get-sys-env "DATOMIC_USER")
+                                           :password (get-sys-env "DATOMIC_PASS")}])
  :dependencies #(vec
                  (concat
                   %
