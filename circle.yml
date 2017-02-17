@@ -4,15 +4,15 @@ machine:
   environment:
     BOOT_CLOJURE_VERSION: 1.9.0-alpha14
     BOOT_JVM_OPTIONS: -client -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx2g -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -Xverify:none -Ddatomic.txTimeoutMsec=60000
-    DATOMIC_VERSION: 0.9.5544
+    DATOMIC_VERSION: 0.9.5561
 
 dependencies:
   pre:
     - sudo apt-get update
     - sudo apt-get install unzip
     - git submodule update --init --recursive
-    - bash ./build/datomic/install-datomic.sh -v ${DATOMIC_VERSION} -u ${DATOMIC_USER} -p ${DATOMIC_PASS}
-    - sudo bash ./build/install-boot.sh
+    - bash ./build/scripts/datomic/install-datomic.sh -v ${DATOMIC_VERSION} -u ${DATOMIC_USER} -p ${DATOMIC_PASS}
+    - sudo bash ./build/scripts/install-boot.sh
     - boot show -d:
         timeout: 7200
   override:
@@ -23,5 +23,5 @@ dependencies:
 
 test:
   override:
-    - boot test-clj:
+    - boot datomic test-all:
         timeout: 1800
