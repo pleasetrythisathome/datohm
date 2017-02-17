@@ -5,6 +5,7 @@
 (require '[pleasetrythisathome.build :refer :all]
          '[pleasetrythisathome.deps :refer [deps]])
 
+(def org "pleasetrythisathome")
 (def project "datohm")
 (def version (deduce-version-from-git))
 
@@ -42,6 +43,7 @@
  '[adzerk.boot-cljs :refer [cljs]]
  '[adzerk.boot-cljs-repl :refer [cljs-repl start-repl]]
  '[adzerk.boot-reload :refer [reload]]
+ '[boot.util :as util]
  '[boot-component.reloaded :refer :all]
  '[clojure.tools.namespace.repl :as repl]
  '[environ.core :refer [env]]
@@ -49,8 +51,10 @@
 
 (bootlaces! version)
 
+(util/info (pr-str [(symbol org project) version]))
+
 (task-options!
- pom {:project (symbol project)
+ pom {:project (symbol org project)
       :version version
       :description "A batteries included om.next framework."
       :license {"The MIT License (MIT)" "http://opensource.org/licenses/mit-license.php"}
