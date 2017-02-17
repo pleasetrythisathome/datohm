@@ -62,7 +62,17 @@
              :ret conn?))
    :cljs
    (do
-     (enable-console-print!)))
+     (enable-console-print!)
+
+     (defonce conns (atom {}))
+
+     (defn connect
+       ([] (connect "datohm"))
+       ([db-name]
+        (or (get @conns db-name)
+            (let [conn (d/create-conn {})]
+              (swap! conns assoc db-name conn)
+              conn))))))
 
 ;; ========== Protocols ==========
 

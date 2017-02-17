@@ -23,7 +23,9 @@
 
 (stest/instrument)
 
-(deftest test-spec-gens
-  (doall
-    (for [k (sort (filter keyword? (utils/specs)))]
-      (utils/time-tests k (is (utils/passed? (utils/gen k)))))))
+#?(:clj
+   (do
+     (deftest test-spec-gens
+       (doall
+        (for [k (sort (filter keyword? (utils/specs)))]
+          (utils/time-tests k (is (utils/passed? (utils/gen k)))))))))

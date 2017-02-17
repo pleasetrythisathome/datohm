@@ -23,13 +23,20 @@
 
 (stest/instrument)
 
-(deftest fn-specs
-  (utils/test-checkable-syms (utils/specs "datohm.conn")))
+#?(:clj
+   (do
+     (deftest fn-specs
+       (utils/test-checkable-syms (utils/specs "datohm.conn")))
 
-(deftest datomic-uri-test
-  (is (= "datomic:dev://localhost:4334/test"
-         (conn/datomic-uri "test")))
-  (is (= "datomic:ddb://us-east-1/test/test"
-         (conn/datomic-uri "ddb" "us-east-1/test" "test")))
-  (is (= "datomic:ddb://us-east-1/test/test?aws_access_key_id=XXX&aws_secret_key=XXX"
-         (conn/datomic-uri "ddb" "us-east-1/test" "test" "XXX" "XXX"))))
+     (deftest datomic-uri-test
+       (is (= "datomic:dev://localhost:4334/test"
+              (conn/datomic-uri "test")))
+       (is (= "datomic:ddb://us-east-1/test/test"
+              (conn/datomic-uri "ddb" "us-east-1/test" "test")))
+       (is (= "datomic:ddb://us-east-1/test/test?aws_access_key_id=XXX&aws_secret_key=XXX"
+              (conn/datomic-uri "ddb" "us-east-1/test" "test" "XXX" "XXX"))))))
+
+(deftest connect-test
+  (testing "idempotent"
+    (is (= (conn/connect "datohm.conn-test")
+           (conn/connect "datohm.conn-test")))))

@@ -1,7 +1,7 @@
 (ns datohm.test-utils
-  (:require [#?(:clj clj-time.core :cljs cljs-time.core) :as t]
-            [#?(:clj clj-time.format :cljs cljs-time.format) :as tf]
-            [#?(:clj clj-time.coerce :cljs cljs-time.coerce) :as tc]
+  (:require [#?(:clj clj-time.core :cljs cljs-time.core) :as time]
+            [#?(:clj clj-time.format :cljs cljs-time.format) :as timef]
+            [#?(:clj clj-time.coerce :cljs cljs-time.coerce) :as timec]
             [#?(:clj  clojure.spec
                 :cljs cljs.spec)
              :as s]
@@ -14,6 +14,7 @@
              :as stest]
             [#?(:clj  clojure.test
                 :cljs cljs.test)
+             :as t
              :include-macros true
              #?(:clj  :refer
                 :cljs :refer-macros)
@@ -22,7 +23,7 @@
             [clojure.test.check :as stc]
             [clojure.test.check.properties])
   #?(:cljs
-     (:require-macros [datohm.spec-utils :refer [time-tests spec-problems]])))
+     (:require-macros [datohm.test-utils :refer [time-tests spec-problems]])))
 
 (stest/instrument)
 
@@ -30,7 +31,7 @@
   {:clojure.spec.test.check/opts {:num-tests 25}})
 
 (defn now []
-  #?(:clj  (tc/to-long (t/now))
+  #?(:clj  (timec/to-long (time/now))
      :cljs (if-let [now (.-now (.-performance js/window))]
              (.call now (.-performance js/window))
              (.now js/Date))))
@@ -55,7 +56,7 @@
 (defn gen
   [spec]
   (try (gen/generate (s/gen spec))
-       (catch Throwable e
+       (catch #?(:clj Throwable :cljs js/Error) e
          (ex-data e))))
 
 (defn passed?

@@ -9,7 +9,6 @@
  :dependencies #(vec
                  (concat
                   %
-                  '[[ch.qos.logback/logback-classic  "1.0.1"]]
                   (->> [:clojure
                         :clojurescript
                         :datascript
@@ -23,9 +22,13 @@
                         :transit
                         :time]
                        (pull-deps deps))
-                  (->> [{:boot [:component
+                  (->> [{:boot [:cljs
+                                :cljs-repl
+                                :cljs-test
+                                :component
                                 :datomic
                                 :laces
+                                :reload
                                 :test]
                          :test [:check]}]
                        (pull-deps deps "test"))))
@@ -34,9 +37,13 @@
 
 (require
  '[adzerk.bootlaces :refer :all]
+ '[adzerk.boot-cljs :refer [cljs]]
+ '[adzerk.boot-cljs-repl :refer [cljs-repl start-repl]]
+ '[adzerk.boot-reload :refer [reload]]
  '[adzerk.boot-test :refer [test]]
  '[boot-component.reloaded :refer :all]
  '[clojure.tools.namespace.repl :as repl]
+ '[crisptrutski.boot-cljs-test :as ctest]
  '[environ.core :refer [env]]
  'datomic.codec
  'datomic.db
@@ -63,7 +70,23 @@
   []
   (set-env! :source-paths #(conj % "test"))
   (comp
+   (datomic)
    (test)))
+
+(deftask test-cljs
+  "test all"
+  []
+  (set-env! :source-paths #(conj % "test"))
+  (comp
+   (ctest/test-cljs)))
+
+(deftask test-all
+  "test all"
+  []
+  (set-env! :source-paths #(conj % "test"))
+  (comp
+   (test-clj)
+   (test-cljs)))
 
 (deftask dev
   "watch and compile css, cljs, init cljs-repl and push changes to browser"
@@ -73,6 +96,8 @@
   (comp
    (datomic)
    (watch)
-   (repl :server true)
    (notify)
+   (reload :port 3459)
+   (cljs-repl :port 3458)
+   (cljs :source-map true)
    (target)))

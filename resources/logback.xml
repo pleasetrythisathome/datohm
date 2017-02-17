@@ -12,6 +12,7 @@
   </appender>
 
   <logger name="datomic" level="WARN"/>
+  <logger name="org.hornetq" level="WARN"/>
   <logger name="datohm" level="DEBUG"/>
 
   <root level="INFO">
