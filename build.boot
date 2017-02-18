@@ -30,8 +30,11 @@
                                 :cljs-repl
                                 :component
                                 :datomic
+                                :devtools
+                                :http
                                 :laces
-                                :reload]
+                                :reload
+                                :template]
                          :test [:check]}]
                        (pull-deps deps)
                        (scope-as "test"))))
@@ -47,6 +50,8 @@
  '[boot-component.reloaded :refer :all]
  '[clojure.tools.namespace.repl :as repl]
  '[environ.core :refer [env]]
+ '[pandeiro.boot-http :refer [serve]]
+ '[powerlaces.boot-cljs-devtools :refer [cljs-devtools]]
  '[tailrecursion.boot-datomic :refer [datomic]])
 
 (bootlaces! version)
@@ -58,20 +63,25 @@
       :version version
       :description "A batteries included om.next framework."
       :license {"The MIT License (MIT)" "http://opensource.org/licenses/mit-license.php"}
-      :scm {:url (str "https://github.com/pleasetrythisathome/" project)}}
+      :url (format "https://github.com/%s/%s" org project)
+      :scm {:url (format "https://github.com/%s/%s" org project)}}
  cider {:cljs true}
  datomic {:license-key (env :datomic-license)})
 
 (deftask dev
   "watch and compile css, cljs, init cljs-repl and push changes to browser"
   []
-  (set-env! :source-paths #(conj % "test" "dev"))
-  (apply repl/set-refresh-dirs (get-env :directories))
+  (set-env! :source-paths #(conj % "dev"))
+  (set-env! :resource-paths #(conj % "html"))
   (comp
+   (testing)
    (datomic)
+   (serve :dir "target"
+          :httpkit true)
    (watch)
    (notify)
-   (reload :port 3459)
-   (cljs-repl :port 3458)
-   (cljs :source-map true)
+   (reload)
+   (cljs-repl)
+   (cljs :optimizations :none
+         :source-map true)
    (target)))
