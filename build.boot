@@ -51,12 +51,12 @@
  '[clojure.tools.namespace.repl :as repl]
  '[environ.core :refer [env]]
  '[pandeiro.boot-http :refer [serve]]
- '[powerlaces.boot-cljs-devtools :refer [cljs-devtools]]
+ '[powerlaces.boot-cljs-devtools :refer [cljs-devtools dirac]]
  '[tailrecursion.boot-datomic :refer [datomic]])
 
 (bootlaces! version)
 
-(util/info (pr-str [(symbol org project) version]))
+(util/info (str (pr-str [(symbol org project) version]) "\n"))
 
 (task-options!
  pom {:project (symbol org project)
@@ -68,20 +68,26 @@
  cider {:cljs true}
  datomic {:license-key (env :datomic-license)})
 
+(deftask demo
+  ""
+  []
+  (set-env! :source-paths #(conj % "demo/src")
+            :resource-paths #(conj % "demo/resources")))
+
 (deftask dev
   "watch and compile css, cljs, init cljs-repl and push changes to browser"
   []
   (set-env! :source-paths #(conj % "dev"))
-  (set-env! :resource-paths #(conj % "html"))
   (comp
    (testing)
    (datomic)
-   (serve :dir "target"
-          :httpkit true)
+   (serve :httpkit true)
    (watch)
    (notify)
    (reload)
    (cljs-repl)
+   (cljs-devtools)
+   (dirac)
    (cljs :optimizations :none
          :source-map true)
    (target)))
