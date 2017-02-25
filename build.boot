@@ -1,6 +1,6 @@
 (set-env!
- :source-paths #{"build/src" "src"}
- :resources-paths #{"build/resources" "resources"})
+ :source-paths #{"build/src"}
+ :resources-paths #{"build/resources"})
 
 (require '[pleasetrythisathome.build :refer :all])
 
