@@ -1,0 +1,13 @@
+[:aero
+ :clojure
+ :clojurescript
+ :datascript
+ :datomic
+ :env
+ {:http [:aleph
+         :bidi]}
+ :logging
+ :manifold
+ :plumbing
+ :transit
+ :time]

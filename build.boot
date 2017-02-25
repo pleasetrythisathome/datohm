@@ -2,44 +2,30 @@
  :source-paths #{"build/src" "src"}
  :resources-paths #{"build/resources" "resources"})
 
-(require '[pleasetrythisathome.build :refer :all]
-         '[pleasetrythisathome.deps :refer [deps]])
+(require '[pleasetrythisathome.build :refer :all])
 
 (def org "pleasetrythisathome")
 (def project "datohm")
 (def version (deduce-version-from-git))
 
-(set-env!
- :dependencies #(vec
-                 (concat
-                  %
-                  (->> [:clojure
-                        :clojurescript
-                        :datascript
-                        :datomic
-                        :env
-                        {:http [:aleph
-                                :bidi]}
-                        :logging
-                        :manifold
-                        :plumbing
-                        :transit
-                        :time]
-                       (pull-deps deps))
-                  (->> [{:boot [:cljs
-                                :cljs-repl
-                                :component
-                                :datomic
-                                :devtools
-                                :http
-                                :laces
-                                :reload
-                                :template]
-                         :test [:check]}]
-                       (pull-deps deps)
-                       (scope-as "test"))))
- :source-paths #{"src"}
- :resource-paths #{"resources"})
+(merge-project-env! (project-env))
+
+(merge-env!
+ :repositories {"my.datomic.com" {:url "https://my.datomic.com/repo"
+                                  :username (get-sys-env "DATOMIC_USER")
+                                  :password (get-sys-env "DATOMIC_PASS")}}
+ :dependencies (->> [{:boot [:cljs
+                             :cljs-repl
+                             :component
+                             :datomic
+                             :devtools
+                             :http
+                             :laces
+                             :reload
+                             :template]
+                      :test [:check]}]
+                    (pull-deps deps)
+                    (scope-as "test")))
 
 (require
  '[adzerk.bootlaces :refer :all]
@@ -55,8 +41,6 @@
  '[tailrecursion.boot-datomic :refer [datomic]])
 
 (bootlaces! version)
-
-(util/info (str (pr-str [(symbol org project) version]) "\n"))
 
 (task-options!
  pom {:project (symbol org project)
