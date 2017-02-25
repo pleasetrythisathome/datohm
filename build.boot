@@ -24,7 +24,7 @@
                              :reload
                              :template]
                       :test [:check]}]
-                    (pull-deps deps)
+                    (pull-deps)
                     (scope-as "test")))
 
 (require
