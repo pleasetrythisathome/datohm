@@ -1,4 +1,5 @@
 (set-env!
+ ;; :dependencies '[[pleasetrythisathome/boot-build "0.1.0-SNAPSHOT"]]
  :source-paths #{"build/src"}
  :resource-paths #{"build/resources"})
 
@@ -22,7 +23,8 @@
                              :http
                              :laces
                              :reload
-                             :template]}
+                             :template
+                             :test]}
                      :repl
                      {:test [:check]}]
                     (pull-deps)
@@ -33,6 +35,7 @@
  '[adzerk.boot-cljs :refer [cljs]]
  '[adzerk.boot-cljs-repl :refer [cljs-repl start-repl]]
  '[adzerk.boot-reload :refer [reload]]
+ '[adzerk.boot-test :refer [test]]
  '[boot.util :as util]
  '[boot-component.reloaded :refer :all]
  '[clojure.tools.namespace.repl :as repl]
@@ -51,6 +54,7 @@
       :url (format "https://github.com/%s/%s" org project)
       :scm {:url (format "https://github.com/%s/%s" org project)}}
  datomic {:license-key (env :datomic-license)}
+ test {:exclusions #{'pleasetrythisathome.build}}
  cljs-repl {:nrepl-opts {:middleware '[cider.nrepl/cider-middleware
                                        refactor-nrepl.middleware/wrap-refactor
                                        cemerick.piggieback/wrap-cljs-repl]}})
