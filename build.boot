@@ -22,8 +22,9 @@
                              :http
                              :laces
                              :reload
-                             :template]
-                      :test [:check]}]
+                             :template]}
+                     :repl
+                     {:test [:check]}]
                     (pull-deps)
                     (scope-as "test")))
 
@@ -49,8 +50,10 @@
       :license {"The MIT License (MIT)" "http://opensource.org/licenses/mit-license.php"}
       :url (format "https://github.com/%s/%s" org project)
       :scm {:url (format "https://github.com/%s/%s" org project)}}
- cider {:cljs true}
- datomic {:license-key (env :datomic-license)})
+ datomic {:license-key (env :datomic-license)}
+ cljs-repl {:nrepl-opts {:middleware '[cider.nrepl/cider-middleware
+                                       refactor-nrepl.middleware/wrap-refactor
+                                       cemerick.piggieback/wrap-cljs-repl]}})
 
 (deftask demo
   ""
@@ -69,9 +72,9 @@
    (watch)
    (notify)
    (reload)
-   (cljs-repl)
-   (cljs-devtools)
    (dirac)
+   (cljs-devtools)
+   (cljs-repl)
    (cljs :optimizations :none
          :source-map true)
    (target)))
