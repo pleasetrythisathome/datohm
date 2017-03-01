@@ -1,7 +1,5 @@
 (set-env!
- ;; :dependencies '[[pleasetrythisathome/boot-build "0.1.0-SNAPSHOT"]]
- :source-paths #{"build/src"}
- :resource-paths #{"build/resources"})
+ :dependencies '[[pleasetrythisathome/boot.build "0.1.0-SNAPSHOT"]])
 
 (require '[pleasetrythisathome.build :refer :all])
 
