@@ -1,5 +1,7 @@
 (ns datohm.config
-  (:require [taoensso.encore :refer [merge-deep]]
+  (:require [clojure.string :as str]
+            [clojure.walk :as walk]
+            [taoensso.encore :refer [merge-deep]]
             [taoensso.timbre :as log]
             #?@
             (:clj
@@ -23,6 +25,26 @@
          (reduce (fn [out ks]
                    (assoc-in out ks (get-in config ks)))
                  {}))))
+
+(defn walk-keys
+  [f m]
+  (let [f (fn [[k v]]
+            (if (keyword? k)
+              [(f k) v]
+              [k v]))]
+    (walk/postwalk (fn [x]
+                     (if (map? x)
+                       (into {} (map f x))
+                       x))
+                   m)))
+
+(defn jsonify
+  [k]
+  (str/replace (name k) #"-" "_"))
+
+(defn jsonify-keys
+  [m]
+  (walk-keys jsonify m))
 
 #?(:clj
    (do

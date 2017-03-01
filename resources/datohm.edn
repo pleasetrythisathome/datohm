@@ -1,0 +1,9 @@
+{:datomic-license #env DATOMIC_LICENSE
+ :transactor
+ {:aws-region "us-east-1"
+  :aws-instance-type "c3.large"
+  :java-xmx "2625m"
+  :java-opts "-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSParallelRemarkEnabled -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
+  :memory-index-threshold "32m"
+  :memory-index-max "512m"
+  :object-cache-max "1g"}}

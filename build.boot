@@ -33,12 +33,15 @@
  '[adzerk.boot-cljs :refer [cljs]]
  '[adzerk.boot-cljs-repl :refer [cljs-repl start-repl]]
  '[adzerk.boot-reload :refer [reload]]
+ '[adzerk.boot-template :as st]
  '[adzerk.boot-test :refer [test]]
  '[boot.util :as util]
  '[boot-component.reloaded :refer :all]
  '[clojure.tools.namespace.repl :as repl]
+ '[datohm.config :as config]
  '[environ.core :refer [env]]
  '[pandeiro.boot-http :refer [serve]]
+ '[plumbing.core :refer :all]
  '[powerlaces.boot-cljs-devtools :refer [cljs-devtools dirac]]
  '[tailrecursion.boot-datomic :refer [datomic]])
 
@@ -80,3 +83,23 @@
    (cljs :optimizations :none
          :source-map true)
    (target)))
+
+(deftask template-datomic
+  "template datomic deploy files"
+  [e env VAL kw "deploy environment ie. staging"]
+  (let [config (config/config "datohm" env)
+        subs (->> config
+                  (merge {:project project
+                          :env (name env)
+                          :datomic-version
+                          (->> (pull-deps [:datomic])
+                               (filter (comp (partial = 'com.datomic/datomic-pro)
+                                             first))
+                               (first)
+                               second)})
+                  (config/jsonify-keys))]
+    (comp
+     (st/template :paths ["datomic/ddb-transactor.properties"
+                          "datomic/cf.properties"]
+                  :subs subs)
+     (target))))
