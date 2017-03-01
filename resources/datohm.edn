@@ -1,4 +1,6 @@
-{:datomic-license #env DATOMIC_LICENSE
+{:aws-access-key-id #env AWS_ACCESS_KEY_ID
+ :aws-secret-key #env AWS_SECRET_KEY
+ :datomic-license #env DATOMIC_LICENSE
  :transactor
  {:aws-region "us-east-1"
   :aws-instance-type "c3.large"

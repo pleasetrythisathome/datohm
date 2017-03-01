@@ -29,6 +29,8 @@
                     (scope-as "test")))
 
 (require
+ '[datohm.config :as config]
+ '[datohm.deploy :refer :all]
  '[adzerk.bootlaces :refer :all]
  '[adzerk.boot-cljs :refer [cljs]]
  '[adzerk.boot-cljs-repl :refer [cljs-repl start-repl]]
@@ -38,10 +40,8 @@
  '[boot.util :as util]
  '[boot-component.reloaded :refer :all]
  '[clojure.tools.namespace.repl :as repl]
- '[datohm.config :as config]
  '[environ.core :refer [env]]
  '[pandeiro.boot-http :refer [serve]]
- '[plumbing.core :refer :all]
  '[powerlaces.boot-cljs-devtools :refer [cljs-devtools dirac]]
  '[tailrecursion.boot-datomic :refer [datomic]])
 
@@ -54,22 +54,17 @@
       :license {"The MIT License (MIT)" "http://opensource.org/licenses/mit-license.php"}
       :url (format "https://github.com/%s/%s" org project)
       :scm {:url (format "https://github.com/%s/%s" org project)}}
- datomic {:license-key (env :datomic-license)}
- test {:exclusions #{'pleasetrythisathome.build}}
+ datomic {:license-key (:datomic-license (config/config "datohm"))}
+ test {:exclusions #{'datohm.deploy}}
  cljs-repl {:nrepl-opts {:middleware '[cider.nrepl/cider-middleware
                                        refactor-nrepl.middleware/wrap-refactor
                                        cemerick.piggieback/wrap-cljs-repl]}})
 
-(deftask demo
-  ""
-  []
-  (set-env! :source-paths #(conj % "demo/src")
-            :resource-paths #(conj % "demo/resources")))
-
 (deftask dev
   "watch and compile css, cljs, init cljs-repl and push changes to browser"
   []
-  (set-env! :source-paths #(conj % "dev"))
+  (set-env! :source-paths #(conj % "dev" "demo/src")
+            :resource-paths #(conj % "demo/resources"))
   (comp
    (testing)
    (datomic)
@@ -83,23 +78,3 @@
    (cljs :optimizations :none
          :source-map true)
    (target)))
-
-(deftask template-datomic
-  "template datomic deploy files"
-  [e env VAL kw "deploy environment ie. staging"]
-  (let [config (config/config "datohm" env)
-        subs (->> config
-                  (merge {:project project
-                          :env (name env)
-                          :datomic-version
-                          (->> (pull-deps [:datomic])
-                               (filter (comp (partial = 'com.datomic/datomic-pro)
-                                             first))
-                               (first)
-                               second)})
-                  (config/jsonify-keys))]
-    (comp
-     (st/template :paths ["datomic/ddb-transactor.properties"
-                          "datomic/cf.properties"]
-                  :subs subs)
-     (target))))
