@@ -11,7 +11,7 @@ dependencies:
     - sudo apt-get update
     - sudo apt-get install unzip
     - git submodule update --init --recursive
-    - sudo bash build/scripts/install-boot.sh
+    - sudo bash scripts/install-boot.sh
     - bash scripts/install-datomic.sh -v ${DATOMIC_VERSION} -u ${DATOMIC_USER} -p ${DATOMIC_PASS}
     - boot show -d:
         timeout: 7200
