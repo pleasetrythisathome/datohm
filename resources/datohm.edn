@@ -1,6 +1,15 @@
 {:aws-access-key-id #env AWS_ACCESS_KEY_ID
  :aws-secret-key #env AWS_SECRET_KEY
- :datomic-license #env DATOMIC_LICENSE
+ :datomic {:license #env DATOMIC_LICENSE
+           :location {:storage #profile {:dev "dev"
+                                         :test "dev"
+                                         :default "ddb"}
+                      :region "us-east-1"
+                      :table "datohm"
+                      :db-name #profile {:default ^:ref [:project]
+                                         :test "test"}
+                      :aws-access-key-id ^:ref [:aws-access-key-id]
+                      :aws-secret-key ^:ref [:aws-secret-key]}}
  :transactor
  {:aws-region "us-east-1"
   :aws-instance-type "c3.large"

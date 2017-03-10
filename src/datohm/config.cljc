@@ -75,7 +75,7 @@
              {}))))
 
      (defn config
-       ([project] (config project nil))
+       ([project] (config project "dev"))
        ([project profile]
         (merge-deep (config-from-classpath project profile)
                     (user-config project profile))))

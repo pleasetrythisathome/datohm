@@ -1,5 +1,6 @@
 (ns datohm.conn
-  (:require [#?(:clj  clojure.spec
+  (:require [datohm.ctr :as ctr]
+            [#?(:clj  clojure.spec
                 :cljs cljs.spec)
              :as s]
             [#?(:clj  clojure.spec.test
@@ -9,10 +10,14 @@
             [#?(:clj  clojure.spec.gen
                 :cljs cljs.spec.impl.gen)
              :as gen]
+            [cemerick.url :refer [url-encode]]
+            [com.stuartsierra.component :as component]
             [#?(:clj datomic.api
                 :cljs datascript.core) :as d]
             #?(:clj [environ.core :refer [env]])
-            [taoensso.timbre :as log]))
+            [plumbing.core :refer :all]
+            [taoensso.timbre :as log]
+            [clojure.string :as str]))
 
 ;; ========== Preds ==========
 
@@ -28,47 +33,130 @@
 
 #?(:clj
    (do
-     (defn datomic-uri
-       ([name] (datomic-uri "dev" "localhost:4334" name))
-       ([storage uri name] (datomic-uri storage uri name nil nil))
-       ([storage uri name aws-access-key-id aws-secret-key]
-        (cond-> (format "datomic:%s://%s/%s"
-                        storage uri name)
-          (and aws-access-key-id
-               aws-secret-key) (str (format "?aws_access_key_id=%s&aws_secret_key=%s"
-                                            aws-access-key-id aws-secret-key)))))
+     (s/def ::storage #{"mem" "dev" "ddb" "ddb-local"})
+     (s/def ::host string?)
+     (s/def ::port pos-int?)
+     (s/def ::region string?)
+     (s/def ::table string?)
+     (s/def ::db-name string?)
+     (s/def :com.aws/aws-access-key-id string?)
+     (s/def :com.aws/aws-secret-key string?)
 
-     (defn uri-from-env
-       [name]
-       (datomic-uri (env :datomic-storage "dev")
-                    (env :datomic-uri "localhost:4334")
-                    name
-                    (env :aws-access-key-id)
-                    (env :aws-secret-key)))
+     (defmulti datomic-uri :storage)
 
-     (defn unique-db
-       []
-       (uri-from-env (d/squuid)))
+     (defmulti storage-params :storage)
 
-     (defn connect
-       ([] (connect (env :datomic-db-name "datohm")))
-       ([db-name]
-        (let [db-uri (uri-from-env db-name)]
-          (d/create-database db-uri)
-          (d/connect db-uri))))
+     (s/def ::location (s/multi-spec storage-params :storage))
 
-     (s/fdef connect
-             :args (s/? (s/and string? seq))
-             :ret conn?))
+     (s/fdef datomic-uri
+             :args (s/cat :params ::location)
+             :ret string?)
+
+     (defmethod datomic-uri "mem"
+       [{:keys [storage
+                db-name]}]
+       (-> "datomic:%s://%s"
+           (format storage (url-encode db-name))))
+
+     (defmethod storage-params "mem"
+       [_]
+       (s/keys :req-un [::storage
+                        ::db-name]))
+
+     (defmethod datomic-uri "dev"
+       [{:keys [storage
+                host
+                port
+                db-name]
+         :or {host "localhost"
+              port 4334}}]
+       (-> "datomic:%s://%s:%s/%s"
+           (format storage host port (url-encode db-name))))
+
+     (defmethod storage-params "dev"
+       [_]
+       (s/keys :req-un [::storage
+                        ::db-name]
+               :opt-un [::host
+                        ::port]))
+
+     (defn uri-params
+       [params]
+       (->> params
+            (map-keys (comp #(str/replace % "-" "_") name))
+            (map (partial str/join "="))
+            (str/join "&")
+            (str "?")))
+
+     (defn add-aws-creds
+       [uri params]
+       (or (some-> params
+                   (select-keys [:aws-access-key-id
+                                 :aws-secret-key])
+                   seq
+                   (uri-params)
+                   (->> (str uri)))
+           uri))
+
+     (defmethod datomic-uri "ddb"
+       [{:keys [storage
+                region
+                table
+                db-name]
+         :as params}]
+       (-> "datomic:%s://%s/%s/%s"
+           (format storage region table (url-encode db-name))
+           (add-aws-creds params)))
+
+     (defmethod storage-params "ddb"
+       [_]
+       (s/keys :req-un [::storage
+                        ::region
+                        ::table
+                        ::db-name]
+               :opt-un [:com.aws/aws-access-key-id
+                        :com.aws/aws-secret-key]))
+
+     (defmethod datomic-uri "ddb-local"
+       [{:keys [storage
+                host
+                port
+                table
+                db-name]
+         :as params}]
+       (-> "datomic:%s://%s:%s/%s/%s"
+           (format storage host port table (url-encode db-name))
+           (add-aws-creds params)))
+
+     (defmethod storage-params "ddb-local"
+       [_]
+       (s/keys :req-un [::storage
+                        ::host
+                        ::port
+                        ::table
+                        ::db-name]
+               :opt-un [:com.aws/aws-access-key-id
+                        :com.aws/aws-secret-key]))
+
+     (defonce conn nil)
+
+     (defn connect!
+       [uri]
+       (log/info "connecting to datomic: " uri)
+       (d/create-database uri)
+       (let [c (d/connect uri)]
+         (log/info "connected to datomic:" uri)
+         (alter-var-root #'conn (constantly c))
+         c)))
    :cljs
    (do
      (enable-console-print!)
 
      (defonce conns (atom {}))
 
-     (defn connect
+     (defn connect!
        ([] (connect "datohm"))
-       ([db-name]
+       ([uri]
         (or (get @conns db-name)
             (let [conn (d/create-conn {})]
               (swap! conns assoc db-name conn)
@@ -76,23 +164,39 @@
 
 ;; ========== Protocols ==========
 
-(defprotocol DatomicConnection
+(defprotocol DatomicUri
+  (url [_] [_ db-name]))
+
+(defprotocol DatabaseConnection
   (as-conn [_]))
 
 (defprotocol DatabaseReference
   (as-db [_]))
 
-(extend-protocol DatomicConnection
+(extend-protocol DatabaseConnection
   #?(:clj  datomic.Connection
      :cljs cljs.core.Atom)
   (as-conn [c]
     c)
-   #?(:clj  clojure.lang.IPersistentMap
+  #?(:clj  clojure.lang.IPersistentMap
      :cljs cljs.core.PersistentArrayMap)
   (as-conn [env]
     (let [{:keys [conn]} env]
       (assert conn "env missing :conn")
       conn)))
+
+(defn gen-conn
+  []
+  (gen/return conn))
+
+(s/def :datomic/conn
+  (s/with-gen conn?
+    gen-conn))
+
+(s/def :datohm/conn
+  (s/with-gen #(satisfies? DatabaseConnection %)
+    #(s/gen (s/or :conn :datomic/conn
+                  :env (s/keys :req-un [:datomic/conn])))))
 
 (s/fdef as-conn
         :args (s/cat :conn :datohm/conn)
@@ -114,25 +218,74 @@
              (:db-after result))
         (as-db (as-conn env)))))
 
+(defn gen-db
+  []
+  (gen/fmap d/db (gen-conn)))
+
+(s/def :datomic/db
+  (s/with-gen db? gen-db))
+
+(s/def :datohm/db
+  (s/with-gen #(satisfies? DatabaseReference %)
+    #(s/gen (s/or :conn :datomic/conn
+                  :db :datomic/db
+                  :env (s/keys :req-un [:datomic/conn])))))
+
 (s/fdef as-db
         :args (s/cat :db :datohm/db)
         :ret db?)
 
-;; ========== Specs ==========
+#?(:clj
+   (do
+     (s/def ::ephemeral? (s/nilable boolean?))
 
-(s/def :datomic/conn
-  (s/with-gen conn?
-    #(gen/return (connect))))
+     (defrecord DatomicDatabase
+         [location ephemeral?]
+       component/Lifecycle
+       (start [this]
+         (d/create-database (datomic-uri location))
+         this)
+       (stop [this]
+         (d/delete-database (datomic-uri location))
+         (d/shutdown false)
+         this)
+       DatomicUri
+       (url [this]
+         (datomic-uri location))
+       (url [this db-name]
+         (datomic-uri (assoc location :db-name db-name))))
 
-(s/def :datomic/db
-  (s/with-gen db?
-    #(gen/return (d/db (connect)))))
+     (def new-datomic-database
+       (-> map->DatomicDatabase
+           (ctr/wrap-un)
+           (ctr/wrap-kargs)))
 
-(s/def :datohm/conn
-  (s/or :conn :datomic/conn
-        :env (s/keys :req-un [:datomic/conn])))
+     (s/fdef new-datomic-database
+             :args (s/cat :opts (s/keys :req-un [::location]
+                                        :opt-un [::ephemeral?]))
+             :ret :datohm/db)
 
-(s/def :datohm/db
-  (s/or :conn :datomic/conn
-        :db :datomic/db
-        :env (s/keys :req-un [:datomic/conn])))
+     (defrecord DatomicConnection
+         [db conn]
+       component/Lifecycle
+       (start [this]
+         (assoc this :conn (connect! (url db))))
+       (stop [this]
+         (update-in-when :conn d/release))
+       DatabaseReference
+       (as-db [this]
+         (as-db (as-conn this)))
+       DatabaseConnection
+       (as-conn [this]
+         (:conn this)))
+
+     (def new-datomic-connection
+       (-> map->DatomicConnection
+           (ctr/wrap-using [:db])
+           (ctr/wrap-un)
+           (ctr/wrap-kargs)))
+
+     (s/fdef new-datomic-connection
+             :args (s/cat :opts (s/nilable (s/keys :opt-un [:datohm/db
+                                                            :datohm/conn])))
+             :ret :datohm/conn)))

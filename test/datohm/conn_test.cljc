@@ -1,5 +1,6 @@
 (ns datohm.conn-test
-  (:require [datohm.conn :as conn]
+  (:require [datohm.config :as config]
+            [datohm.conn :as conn]
             [datohm.test-utils :as utils]
             [#?(:clj  clojure.spec
                 :cljs cljs.spec)
@@ -23,6 +24,11 @@
 
 (stest/instrument)
 
+(conn/connect! (-> "datohm"
+                   (config/config :test)
+                   (get-in [:datomic :location])
+                   (conn/datomic-uri)))
+
 #?(:clj
    (do
      (deftest fn-specs
@@ -30,13 +36,36 @@
 
      (deftest datomic-uri-test
        (is (= "datomic:dev://localhost:4334/test"
-              (conn/datomic-uri "test")))
-       (is (= "datomic:ddb://us-east-1/test/test"
-              (conn/datomic-uri "ddb" "us-east-1/test" "test")))
-       (is (= "datomic:ddb://us-east-1/test/test?aws_access_key_id=XXX&aws_secret_key=XXX"
-              (conn/datomic-uri "ddb" "us-east-1/test" "test" "XXX" "XXX"))))))
-
-(deftest connect-test
-  (testing "idempotent"
-    (is (= (conn/connect "datohm.conn-test")
-           (conn/connect "datohm.conn-test")))))
+              (conn/datomic-uri {:storage "dev"
+                                 :db-name "test"})))
+       (is (= "datomic:dev://0.0.0.0:5000/test"
+              (conn/datomic-uri {:storage "dev"
+                                 :host "0.0.0.0"
+                                 :port 5000
+                                 :db-name "test"})))
+       (is (= "datomic:ddb://us-east-1/table/test"
+              (conn/datomic-uri {:storage "ddb"
+                                 :region "us-east-1"
+                                 :table "table"
+                                 :db-name "test"})))
+       (is (= "datomic:ddb://us-east-1/table/test?aws_access_key_id=XXX&aws_secret_key=XXX"
+              (conn/datomic-uri {:storage "ddb"
+                                 :region "us-east-1"
+                                 :table "table"
+                                 :db-name "test"
+                                 :aws-access-key-id "XXX"
+                                 :aws-secret-key "XXX"})))
+       (is (= "datomic:ddb-local://0.0.0.0:5000/table/test"
+              (conn/datomic-uri {:storage "ddb-local"
+                                 :host "0.0.0.0"
+                                 :port 5000
+                                 :table "table"
+                                 :db-name "test"})))
+       (is (= "datomic:ddb-local://0.0.0.0:5000/table/test?aws_access_key_id=XXX&aws_secret_key=XXX"
+              (conn/datomic-uri {:storage "ddb-local"
+                                 :host "0.0.0.0"
+                                 :port 5000
+                                 :table "table"
+                                 :db-name "test"
+                                 :aws-access-key-id "XXX"
+                                 :aws-secret-key "XXX"}))))))
