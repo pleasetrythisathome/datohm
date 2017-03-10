@@ -54,7 +54,7 @@
       :license {"The MIT License (MIT)" "http://opensource.org/licenses/mit-license.php"}
       :url (format "https://github.com/%s/%s" org project)
       :scm {:url (format "https://github.com/%s/%s" org project)}}
- datomic {:license-key (:datomic-license (config/config "datohm"))}
+ datomic {:license-key (get-in (config/config "datohm") [:license :datomic])}
  test {:exclusions #{'datohm.deploy}}
  cljs-repl {:nrepl-opts {:middleware '[cider.nrepl/cider-middleware
                                        refactor-nrepl.middleware/wrap-refactor
