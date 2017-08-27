@@ -15,7 +15,9 @@
             [#?(:clj datomic.api
                 :cljs datascript.core) :as d]
             #?(:clj [environ.core :refer [env]])
-            [plumbing.core :refer :all]
+            [plumbing.core #?@(:clj  [:refer :all]
+                               :cljs [:refer [map-vals map-keys update-in-when]
+                                      :refer-macros [?> ?>> for-map <-]])]
             [taoensso.timbre :as log]
             [clojure.string :as str]))
 

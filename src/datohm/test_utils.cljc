@@ -85,9 +85,3 @@
                  (stest/check datohm.test-utils/check-opts)
                  first
                  datohm.test-utils/passed?)))))))
-
-(-> 'datohm.conn/new-datomic-connection
-    (stest/check datohm.test-utils/check-opts)
-    first
-    ;;datohm.test-utils/passed?
-    )
