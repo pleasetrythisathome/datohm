@@ -150,6 +150,7 @@
   ([] (connect! #?(:clj  (datomic-uri {:storage "dev"
                                        :db-name "datohm"})
                    :cljs "datohm")))
+
   ([uri]
    (log/info "connecting to datomic: " uri)
    #?(:clj
@@ -157,8 +158,11 @@
         (d/create-database uri)
         (d/connect uri))
       :cljs
+      (connect! uri {})))
+  #?(:cljs
+     ([uri schema]
       (or (get @-conns uri)
-          (let [conn (d/create-conn {})]
+          (let [conn (d/create-conn schema)]
             (swap! -conns assoc uri conn)
             conn)))))
 
