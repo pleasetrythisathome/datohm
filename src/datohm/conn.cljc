@@ -21,6 +21,8 @@
             [taoensso.timbre :as log]
             [clojure.string :as str]))
 
+#?(:cljs (enable-console-print!))
+
 ;; ========== Preds ==========
 
 (def db?
@@ -138,31 +140,27 @@
                         ::table
                         ::db-name]
                :opt-un [:com.aws/aws-access-key-id
-                        :com.aws/aws-secret-key]))
+                        :com.aws/aws-secret-key]))))
 
-     (defonce conn nil)
-
-     (defn connect!
-       [uri]
-       (log/info "connecting to datomic: " uri)
-       (d/create-database uri)
-       (let [c (d/connect uri)]
-         (log/info "connected to datomic:" uri)
-         (alter-var-root #'conn (constantly c))
-         c)))
-   :cljs
+#?(:cljs
    (do
-     (enable-console-print!)
+     (defonce -conns (atom {}))))
 
-     (defonce conns (atom {}))
-
-     (defn connect!
-       ([] (connect "datohm"))
-       ([uri]
-        (or (get @conns db-name)
-            (let [conn (d/create-conn {})]
-              (swap! conns assoc db-name conn)
-              conn))))))
+(defn connect!
+  ([] (connect! #?(:clj  (datomic-uri {:storage "dev"
+                                       :db-name "datohm"})
+                   :cljs "datohm")))
+  ([uri]
+   (log/info "connecting to datomic: " uri)
+   #?(:clj
+      (do
+        (d/create-database uri)
+        (d/connect uri))
+      :cljs
+      (or (get @-conns uri)
+          (let [conn (d/create-conn {})]
+            (swap! -conns assoc uri conn)
+            conn)))))
 
 ;; ========== Protocols ==========
 
@@ -189,7 +187,9 @@
 
 (defn gen-conn
   []
-  (gen/return conn))
+  (gen/return (connect! #?(:clj (datomic-uri {:storage "dev"
+                                              :db-name "clojure.spec"})
+                           :cljs "clojure.spec"))))
 
 (s/def :datomic/conn
   (s/with-gen conn?
