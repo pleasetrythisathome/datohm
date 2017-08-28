@@ -85,10 +85,10 @@
        (env :profile :dev))
 
      (defmacro cljs-config
-       [profile]
-       (->> (config profile)
+       [project profile]
+       (->> (config project profile)
             (filter-cljs))))
    :cljs
    (defn config
-     [profile]
-     (cljs-config profile)))
+     [project profile]
+     (cljs-config project profile)))
