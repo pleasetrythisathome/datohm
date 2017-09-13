@@ -192,7 +192,7 @@
       [cljs.core/PersistentHashMap
        (as-conn [env]
                 (let [{:keys [state conn]} env]
-                  (assert (or conn state) "env missing :conn")
+                  (assert (or conn state) "env missing :conn or :state")
                   (or conn state)))]))
 
 (defn gen-conn
