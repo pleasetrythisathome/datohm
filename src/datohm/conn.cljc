@@ -183,11 +183,17 @@
   (as-conn [c]
     c)
   #?(:clj  clojure.lang.IPersistentMap
-     :cljs cljs.core/PersistentHashMap)
+     :cljs cljs.core/PersistentArrayMap)
   (as-conn [env]
     (let [{:keys [state conn]} env]
       (assert (or conn state) "env missing :conn")
-      (or conn state))))
+      (or conn state)))
+  #?@(:cljs
+      [cljs.core/PersistentHashMap
+       (as-conn [env]
+                (let [{:keys [state conn]} env]
+                  (assert (or conn state) "env missing :conn")
+                  (or conn state)))]))
 
 (defn gen-conn
   []
@@ -218,11 +224,17 @@
   (as-db [db]
     (d/db db))
   #?(:clj  clojure.lang.IPersistentMap
-     :cljs cljs.core.PersistentHashMap)
+     :cljs cljs.core.PersistentArrayMap)
   (as-db [{:keys [tx/mode tx/result] :as env}]
     (or (and (= :tx.mode/with mode)
              (:db-after result))
-        (as-db (as-conn env)))))
+        (as-db (as-conn env))))
+  #?@(:cljs
+      [cljs.core/PersistentHashMap
+       (as-db [{:keys [tx/mode tx/result] :as env}]
+              (or (and (= :tx.mode/with mode)
+                       (:db-after result))
+                  (as-db (as-conn env))))]))
 
 (defn gen-db
   []
